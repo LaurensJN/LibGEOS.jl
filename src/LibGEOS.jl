@@ -41,6 +41,18 @@ module LibGEOS
     _connection = GEOSconnection()
     # --- END GEOSconnection ---
 
+    # looks like "3.4.2-CAPI-1.8.2 r3921"
+    versionstring() = unsafe_string(ccall((:GEOSversion, LibGEOS.libgeos),Cstring,()))
+
+    function __init__()
+        # TODO remove
+        info("Using GEOS version: ", versionstring())
+
+        # looks like "3.4.2"
+        versiononly = first(split(versionstring(), '-', limit=2))
+        global const GEOSVERSION = convert(VersionNumber, versiononly)
+    end
+
     include("geos_functions.jl")
     include("geos_types.jl")
     include("geos_operations.jl")

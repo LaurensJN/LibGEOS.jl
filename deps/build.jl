@@ -1,14 +1,23 @@
 using BinDeps
 @BinDeps.setup
 
-libgeos = library_dependency("libgeos",aliases=["libgeos_c", "libgeos_c-1"], validate = function(path, handle)
-    return Libdl.dlsym_e(handle,:initGEOS) != C_NULL && Libdl.dlsym_e(handle,:GEOSDelaunayTriangulation) != C_NULL
-end)
+function version_check(name, handle)
+    fptr = Libdl.dlsym(handle, :GEOSversion)
+    versionptr = ccall(fptr,Cstring,())
+    # looks like "3.4.2-CAPI-1.8.2 r3921"
+    versionstring = unsafe_string(versionptr)
+    # looks like "3.4.2"
+    versiononly = first(split(versionstring, '-', limit=2))
+    geosversion = convert(VersionNumber, versiononly)
+    geosversion >= version
+end
 
-version = "3.6.1"
+libgeos = library_dependency("libgeos",aliases=["libgeos_c", "libgeos_c-1"], validate=version_check)
+
+const version = v"3.6.1"
 
 provides(Sources, URI("http://download.osgeo.org/geos/geos-$(version).tar.bz2"), [libgeos], os = :Unix)
-provides(BuildProcess,Autotools(libtarget = "capi/.libs/libgeos_c."*BinDeps.shlib_ext),libgeos)
+provides(BuildProcess,Autotools(libtarget = "capi/.libs/libgeos_c."*Libdl.dlext),libgeos)
 # provides(AptGet,"libgeos-dev", libgeos)
 # TODO: provides(Yum,"libgeos-dev", libgeos)
 # TODO: provides(Pacman,"libgeos-dev", libgeos)
